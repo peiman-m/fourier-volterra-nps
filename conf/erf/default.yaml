@@ -1,0 +1,33 @@
+# @package erf
+#
+# Default ERF-analysis configuration consumed by `tools/analyze_erf.py`.
+# Loaded with the Hydra override `+erf=default` (the leading ``+`` adds
+# the group to the defaults list; no top-level config change required).
+# Any of the keys below can be overridden per-run, e.g.
+# `+erf=default +erf.n_samples=512`.
+#
+# Notes
+# -----
+# * ``x_max`` and ``training_domain`` are intentionally absent here:
+#   `tools/analyze_erf.py` reads them from
+#   ``cfg.input_generators.train.context_range`` so the ERF is always
+#   measured on the same input domain the model was trained on. Pass
+#   ``+erf.x_max=...`` only if you need to override that derivation.
+# * ``output`` left null so the script falls back to the conventional
+#   artifact path ``${misc.artifacts_dir}/erf/erf.pdf`` (next to the
+#   existing ``metrics/`` and ``plots/`` subdirectories).
+
+n_samples: 1024
+batch_size: 8
+n_grid: 512
+targets: [-2.0, -1.0, 0.0, 1.0, 2.0]
+variants: [trained, random]
+y_sources: [normal, task]
+# Scalar to backprop through the model: one of {"mean", "var", "logp"}.
+# "mean" is the Luo et al. (2016) construction adapted to NPs and avoids
+# the 1/σ²·1/σ⁴ amplification that log-likelihood ERFs incur on highly
+# confident models (e.g. SF-ConvCNP). Use "logp" to reproduce the original
+# log-likelihood-at-yt=0 behavior.
+target: mean
+device: cuda
+output: null

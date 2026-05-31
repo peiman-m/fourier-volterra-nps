@@ -1,0 +1,13 @@
+# @package _global_
+# Port. Legacy include: [./gp.yaml] replaced by Hydra defaults list.
+
+defaults:
+  - gp
+  - _self_
+
+params:
+  kernels:
+    - ${matern12_kernel}
+
+misc:
+  output_generator: gp-matern12

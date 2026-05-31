@@ -1,0 +1,138 @@
+# @package _global_
+
+data:
+  _shared_processor_configs: &shared_processor_configs
+    dirpath: dataset-files/pde/kolmogorov
+    dt: 0.2
+    num_trajectories: 1024
+    use_cached: true
+
+  _shared_dataset_configs: &shared_dataset_configs
+    min_pc: 0.05  ############### ----->>>>Don't Forget this
+    max_pc: 0.25
+    # min_nq: 5
+    # max_nq: 250
+    use_all_queries: true
+
+  datasets:
+    train:
+      _target_: utils.data.KolmogorovDataset
+      # samples_per_epoch: 4      # For debugging; comment out for full epoch
+      processor:
+        _target_: utils.data.KolmogorovDataProcessor
+        subset: train
+        <<: *shared_processor_configs
+      crop_strategy:
+        _target_: utils.data.KolmogorovRandomCropStrategy
+        time_crop_size: 16
+        height_crop_size: 16
+        width_crop_size: 16
+      <<: *shared_dataset_configs
+
+    validation:
+      _target_: utils.data.KolmogorovDataset
+      # samples_per_epoch: 4      # For debugging; comment out for full epoch
+      random_state: 2025
+      processor:
+        _target_: utils.data.KolmogorovDataProcessor
+        subset: validation
+        <<: *shared_processor_configs
+      crop_strategy:
+        _target_: utils.data.KolmogorovRandomCropStrategy
+        time_crop_size: 16
+        height_crop_size: 16
+        width_crop_size: 16
+      <<: *shared_dataset_configs
+
+    test:
+      _target_: utils.data.KolmogorovDataset
+      # samples_per_epoch: 4
+      processor:
+        _target_: utils.data.KolmogorovDataProcessor
+        subset: test
+        <<: *shared_processor_configs
+      crop_strategy:
+        _target_: utils.data.KolmogorovStridedCropStrategy
+        crop_size: 16
+        strides: 16
+      <<: *shared_dataset_configs
+
+  dataloaders:
+    train:
+      batch_size: 6
+      shuffle: true
+      drop_last: false
+    validation:
+      batch_size: 6
+      shuffle: false
+      drop_last: false
+    test:
+      batch_size: 6
+      shuffle: false
+      drop_last: false
+
+plot_fn:
+  _target_: utils.plot_fn.KolmogorovPlotter
+  # figsize: [10.0, 6.0]
+  savefig: false
+  show_plots: false
+  logging: true   # Will work if wandb_logging_enabled is true
+
+params:
+  x_dim: 3
+  y_dim: 2
+
+misc:
+  # Experiment Naming and Organization
+  experiment_name: kolmogorov
+  model_run_name: ${model_name}-seed=${.seed}
+
+  # Logging Configuration
+  wandb_logging_enabled: true   # Master toggle for W&B logging
+  wandb_user: your-wandb-entity
+  project: FVNP-${.experiment_name}-x=${params.x_dim}d-y=${params.y_dim}d
+  name: ${.model_run_name}
+  eval_name: ${.name}_eval
+  hardware_callback: true       # Hardware and Performance
+
+  # Checkpointing Configuration
+  checkpointing:
+    local: true
+    wandb: false
+    save_weights_only: true
+    enable_version_counter: false
+    resume_from: null
+    save_last: true
+    save_periodic_every_n_epochs: null
+    best:
+      monitor: "validation_query_loglik_epoch"
+      mode: "max"
+      save_top_k: 1
+
+  default_lightning_logger: false         # Enable/disable PyTorch lightning's default local log files
+  
+  # Directory structure for local artifacts
+  artifacts_dir: artifacts/${.experiment_name}/x=${params.x_dim}d_y=${params.y_dim}d/model=${model_name}/seed=${.seed}
+  checkpoint_dirpath: ${.artifacts_dir}/checkpoints
+  metrics_dirpath: ${.artifacts_dir}/metrics
+  plots_dirpath: ${.artifacts_dir}/plots
+  
+  # Plotting Configuration
+  num_plots: 5
+  plot_interval: 1
+  plot_fn: ${plot_fn}
+
+  # LR Scheduler Configuration
+  lr_scheduler:
+    enabled: true
+    t_max: ${misc.epochs}
+    eta_min: 1.0e-6
+
+  # Training Settings
+  seed: 0
+  num_workers: 4
+  num_eval_workers: 4
+  epochs: 250
+  check_validation_every_n_epoch: 1
+  enable_progress_bar: true
+  gradient_clip_val: 0.5

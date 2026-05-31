@@ -1,0 +1,96 @@
+# @package _global_
+
+defaults:
+  - /metrics/train: nll
+  - /metrics/val: standard
+  - /metrics/test: standard
+  - _self_
+
+model:
+  _target_: nps.models.TETNP
+  encoder: ${tetnp_encoder}
+  decoder: ${tetnp_decoder}
+  likelihood: ${likelihood}
+
+tetnp_encoder:
+  _target_: nps.core.encoders.TETNPEncoder
+  transformer_encoder: ${transformer_encoder}
+  y_encoder: ${y_encoder}
+
+transformer_encoder:
+  _target_: nps.core.transformers.TEISTransformerEncoder
+  layer: ${tetransformer_layer}
+  num_layers: ${params.num_layers}
+  num_pseudo_tokens: ${params.num_pseudo_tokens}
+  x_dim: ${params.x_dim}
+  pseudo_token_initialiser: ${pseudo_token_initialiser}
+
+tetransformer_layer:
+  _target_: nps.core.attention_layers.MultiHeadTEAttentionLayer
+  attention: ${attention}
+  embed_dim: ${params.embed_dim}
+  feedforward_dim: ${params.feedforward_dim}
+  norm_first: ${params.norm_first}
+
+attention:
+  _target_: nps.core.attentions.MultiHeadTEAttention
+  q_dim: ${params.embed_dim}
+  k_dim: ${params.embed_dim}
+  v_dim: ${params.embed_dim}
+  num_heads: ${params.num_heads}
+  head_dim: ${params.head_dim}
+  kernel: ${attention_kernel}
+
+attention_kernel:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'${params.num_heads} + ${params.x_dim}'}
+  out_dim: ${params.num_heads}
+  num_layers: 2
+  layer_dim: ${params.attn_ker_embed_dim}
+
+y_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'${params.y_dim} + 1'}
+  out_dim: ${params.embed_dim}
+  num_layers: 2
+  layer_dim: ${params.embed_dim}
+
+tetnp_decoder:
+  _target_: nps.core.decoders.TETNPDecoder
+  z_decoder: ${z_decoder}
+
+z_decoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${params.embed_dim}
+  out_dim: ${eval:'2 * ${params.y_dim}'}
+  num_layers: 2
+  layer_dim: ${params.embed_dim}
+
+likelihood:
+  _target_: nps.likelihoods.gaussian.HeteroscedasticNormalLikelihood
+  min_noise: 0.01
+  location_transform: sigmoid
+  scale_transform:
+    - softplus
+    - multiply:
+        value: 0.99
+
+pseudo_token_initialiser:
+  _target_: nps.core.transformers.PseudoTokenInitialiser
+  embed_dim: ${params.embed_dim}
+  num_heads: ${params.num_heads}
+  head_dim: ${params.head_dim}
+
+params:
+  embed_dim: 512
+  attn_ker_embed_dim: 64
+  num_heads: 8
+  head_dim: 64
+  feedforward_dim: 2048
+  num_pseudo_tokens: 96
+  norm_first: true
+  num_layers: 6
+
+model_name: TE-ISTNP-NL${params.num_layers}-EmbD${params.embed_dim}-NH${params.num_heads}xHD${params.head_dim}-FFD${params.feedforward_dim}-AttKerNL${attention_kernel.num_layers}xLD${attention_kernel.layer_dim}-NPseudoTok${params.num_pseudo_tokens}
+# model_name: TE-ISTNP
+

@@ -1,0 +1,33 @@
+# @package _global_
+# Fix: chain ``base`` via defaults so selecting
+# ``benchmark/predprey=test_sim`` pulls the full train/validation/plot/misc
+# tree from ``base.yaml`` and then overlays the sim-test-specific
+# fields via ``_self_``. See the matching note in ``test_real.yaml``.
+
+defaults:
+  - base
+  - _self_
+
+data:
+  datasets:
+    test:
+      _target_: utils.data.PredPreySimDataset
+      min_nc: 5
+      max_nc: 50
+      min_nq: 128
+      max_nq: 128
+      max_prey_population: 500
+      max_pred_population: 500
+      population_rescale_factor: 0.01
+      time_rescale_factor: 0.1
+      trajectory_pool_size: 2048
+      xc_range: [0, 100]
+      xq_range: [0, 100]
+      batch_size: 32
+      drop_last: false
+      samples_per_epoch: 64_000
+      deterministic: true
+      deterministic_seed: 2026
+
+misc:
+  metrics_dirpath: ${misc.artifacts_dir}/metrics/sim

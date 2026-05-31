@@ -1,0 +1,12 @@
+# @package _global_
+# Translation-shift eval variant: inherits the full uniform generator (train,
+# validation, test all on [-3, 3] with UniformSampler) and only relabels the
+# eval tag so artifacts nest under metrics/uniform-shift-0. shift-0 is the
+# zero-shift (in-distribution) anchor of the sweep, so no range override.
+defaults:
+  - uniform
+  - _self_
+
+misc:
+  input_generator:
+    eval: uniform-shift-0

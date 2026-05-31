@@ -1,0 +1,17 @@
+# @package _global_
+#
+# The ``defaults:`` list pulls ``gp.yaml`` first (kernels,
+# output-generator base, lengthscale params), then ``_self_`` layers
+# the gp-rbf-specific bits on top. Key sets across the two files are
+# disjoint, so merge order doesn't matter.
+
+defaults:
+  - gp
+  - _self_
+
+params:
+  kernels:
+    - ${rbf_kernel}
+
+misc:
+  output_generator: gp-rbf

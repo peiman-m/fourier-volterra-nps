@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Effective Receptive Field analysis — single (model, task, seed) job.
+#
+# Usage (via submit_erf_jobs.sh):
+# sbatch --job-name="<job_name>" \
+#        --export=EXPERIMENT_NAME="synthetic/default",\
+#HYDRA_OVERRIDES="model/synthetic=<model> benchmark/synthetic/output_generator=<gen> benchmark/synthetic/input_generator=<gen>",\
+#SEED="<seed>",ACCOUNT="<account>",OUTPUT_GEN="<gen>" \
+#        erf_job.job
+#
+# SEED is a single integer; the submit script fans the seed dimension
+# across separate SLURM jobs, so each job runs exactly one seed.
+
+#SBATCH --time=02:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=50G
+#SBATCH --gres=gpu:a100:1
+#SBATCH --partition=gpu
+# NOTE: --output is set via the sbatch CLI in submit_erf_jobs.sh so it can
+# include the OUTPUT_GEN subdir (logs/<gen>/job-output_<jobname>.txt).
+
+# Read input arguments passed via --export
+EXPERIMENT_NAME=${EXPERIMENT_NAME:?Error: EXPERIMENT_NAME is not set (e.g. synthetic/default)}
+HYDRA_OVERRIDES=${HYDRA_OVERRIDES:-""}
+SEED=${SEED:?Error: SEED is not set}
+ACCOUNT=${ACCOUNT:?Error: ACCOUNT is not set}
+OUTPUT_GEN=${OUTPUT_GEN:?Error: OUTPUT_GEN is not set}
+
+# Set the account dynamically
+#SBATCH --account=${ACCOUNT}
+
+# Load required modules (match training/eval environment)
+module purge
+module load GCCcore/13.2.0
+module load Python/3.11.5
+module load WebProxy/0000
+module load git/2.42.0
+
+# Activate virtual environment
+ENV_PATH="/path/to/your/venv/bin/activate"
+if [ ! -f "$ENV_PATH" ]; then
+    echo "Error: Virtual environment not found at $ENV_PATH"
+    exit 1
+fi
+source "$ENV_PATH"
+
+# Project root
+ROOT_DIR="/path/to/fourier-volterra-nps"
+
+if ! cd "$ROOT_DIR"; then
+    echo "Error: Cannot change to root directory $ROOT_DIR. Exiting."
+    exit 1
+fi
+
+# Preflight: fail fast & loud if the project's inode quota is near full.
+# Same guard as the train/eval job template — ERF runs touch the
+# artifacts/ tree to write the figure, so the same protection applies.
+proj_id=$(lfs project -d "$ROOT_DIR" 2>/dev/null | awk '{print $1; exit}')
+if [ -n "$proj_id" ]; then
+    files_used=$(lfs quota -q -p "$proj_id" /scratch 2>/dev/null \
+                 | awk '$1 == "/scratch" {print $6}')
+    files_limit=350000
+    if [ -n "$files_used" ] && [ "$files_used" -gt $((files_limit * 95 / 100)) ]; then
+        echo "ERROR: project ($proj_id) inode quota at ${files_used}/${files_limit} (>95%)." >&2
+        echo "       Clean up before re-running, e.g.  rm -rf $ROOT_DIR/wandb/run-*" >&2
+        exit 1
+    fi
+fi
+
+# ERF does not log to wandb. Skip WANDB_DIR / wandb sync trap.
+
+echo "Running ERF analysis with seed: $SEED"
+python tools/analyze_erf.py \
+    "+experiment=${EXPERIMENT_NAME}" \
+    "+erf=default" \
+    ${HYDRA_OVERRIDES} \
+    "misc.seed=${SEED}" \
+    "misc.wandb_logging_enabled=false"
+rc=$?
+if [[ $rc -ne 0 ]]; then
+    echo "analyze_erf.py failed at seed $SEED (exit $rc)"
+    exit $rc
+fi

@@ -1,0 +1,12 @@
+# @package _global_
+# Parameterized composer for the predator-prey benchmark. Pick the model
+# via the ``model/predprey`` group, e.g.
+#   python train.py +experiment=predprey/default model/predprey=te-eqtnp
+# Switch test splits (sim/real) via the ``benchmark/predprey`` group, e.g.
+#   python eval.py  +experiment=predprey/default model/predprey=te-eqtnp benchmark/predprey=test_real
+
+defaults:
+  - /benchmark/predprey: base
+  - /optimizer: adamw
+  - /model/predprey: cnp
+  - _self_

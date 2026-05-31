@@ -1,0 +1,152 @@
+# @package _global_
+
+data:
+  # Coordinates left un-normalized even when normalize=true. Override per model
+  # (e.g. [numerical_time]) to feed raw time while lat/lon stay normalized.
+  normalize_exclude_coords: []
+
+  _shared_processor_configs: &shared_processor_configs
+    dirpath: dataset-files/era5
+    years: [2019]
+    # months: [1]    # Use this for quick testing
+    # days: [1, 2, 3, 4, 5, 6, 7]    # Use this for quick testing
+    num_processes: 4
+    download: true
+    normalize: true
+    normalize_exclude_coords: ${data.normalize_exclude_coords}
+    cache_stats: true
+    cache_dataset: true
+    subset_coordinate_ranges:
+      train:
+        latitude: [42, 53]
+        longitude: [8, 28]
+      validation:
+        latitude: [42, 53]
+        longitude: [8, 28]
+      test:
+        latitude: [42, 53]
+        longitude: [-4, 8]
+
+  _shared_dataset_configs: &shared_dataset_configs
+    grid_size_range: [6, 16, 16]  # spatiotemporal grid (time, lat, lon)
+    # grid_size_range: [16, 16]   # spatial grid (lat, lon)
+    min_pc: 0.05         ############### ----->>>>Don't Forget this
+    max_pc: 0.33
+    # min_pq: 0.25
+    # max_pq: 0.5
+    use_all_queries: true
+    max_p_nan: 0.5
+    time_resolution: 5
+    use_time: true
+    use_surface_elevation: false
+    batch_size: 8
+    drop_last: false
+
+  datasets:
+    train:
+      _target_: utils.data.ERA5Dataset
+      samples_per_epoch: 8000
+      processor:
+        _target_: utils.data.ERA5DataProcessor
+        subset: train
+        <<: *shared_processor_configs
+      <<: *shared_dataset_configs
+
+    validation:
+      _target_: utils.data.ERA5Dataset
+      samples_per_epoch: 512
+      processor:
+        _target_: utils.data.ERA5DataProcessor
+        subset: validation
+        <<: *shared_processor_configs
+      deterministic: true
+      deterministic_seed: 2025
+      <<: *shared_dataset_configs
+
+    test:
+      _target_: utils.data.ERA5Dataset
+      samples_per_epoch: 16_000
+      processor:
+        _target_: utils.data.ERA5DataProcessor
+        subset: test
+        <<: *shared_processor_configs
+      deterministic: true
+      deterministic_seed: 2026
+      <<: *shared_dataset_configs
+
+plot_fn:
+  _target_: utils.plot_fn.ERA5Plotter
+  # figsize: [8.0, 3.0]
+  # plot_dir: ${misc.plots_dirpath}
+  stats_cache_dir: ${data._shared_processor_configs.dirpath}
+  coords_normalized: ${data._shared_processor_configs.normalize}
+  x_has_surface_elevation: ${data._shared_dataset_configs.use_surface_elevation}
+  show_latitude: true
+  show_longitude: true
+  # num_lat_ticks: 5
+  # num_lon_ticks: 5
+  savefig: false
+  show_plots: false
+  logging: true   # Will work if wandb_logging_enabled is true
+
+params:
+  x_dim: ${eval:'2 + ${data._shared_dataset_configs.use_time} + ${data._shared_dataset_configs.use_surface_elevation}'}
+  y_dim: 1
+
+misc:
+  # Experiment Naming and Organization
+  experiment_name: era5
+  model_run_name: ${model_name}-seed=${.seed}
+
+  # Logging Configuration
+  wandb_logging_enabled: true   # Master toggle for W&B logging
+  wandb_user: your-wandb-entity
+  project: FVNP-${.experiment_name}-x=${params.x_dim}d-y=${params.y_dim}d
+  name: ${.model_run_name}
+  eval_name: ${.name}_eval
+  hardware_callback: true       # Hardware and Performance
+
+  # Checkpointing Configuration
+  checkpointing:
+    local: true
+    wandb: false
+    save_weights_only: true
+    enable_version_counter: false
+    resume_from: null
+    save_last: true
+    save_periodic_every_n_epochs: null
+    best:
+      monitor: "validation_query_loglik_epoch"
+      mode: "max"
+      save_top_k: 1
+
+  default_lightning_logger: false         # Enable/disable PyTorch lightning's default local log files
+  
+  # Directory structure for local artifacts
+  artifacts_dir: artifacts/${.experiment_name}/x=${params.x_dim}d_y=${params.y_dim}d/model=${model_name}/seed=${.seed}
+  checkpoint_dirpath: ${.artifacts_dir}/checkpoints
+  metrics_dirpath: ${.artifacts_dir}/metrics
+  plots_dirpath: ${.artifacts_dir}/plots
+  
+  # Plotting Configuration
+  num_plots: 5
+  plot_interval: 1
+  plot_fn: ${plot_fn}
+
+  # LR Scheduler Configuration
+  lr_scheduler:
+    enabled: true
+    t_max: ${misc.epochs}   # populated from epochs; self-contained scheduler config
+    eta_min: 1.0e-6
+
+  # Training Settings
+  seed: 0
+  num_workers: 16
+  num_eval_workers: 16
+  pin_memory: true
+  epochs: 250
+  check_validation_every_n_epoch: 1
+  enable_progress_bar: true
+  gradient_clip_val: 0.5
+
+

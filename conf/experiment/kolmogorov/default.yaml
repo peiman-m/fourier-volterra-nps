@@ -1,0 +1,11 @@
+# @package _global_
+# Parameterized composer for the Kolmogorov flow benchmark. Pick the model
+# via the ``model/kolmogorov`` group, e.g.
+#   python train.py +experiment=kolmogorov/default model/kolmogorov=sf-convcnp-f4.5-e176
+# Any entry under ``conf/model/kolmogorov/`` is selectable this way.
+
+defaults:
+  - /benchmark/kolmogorov: base
+  - /optimizer: adamw
+  - /model/kolmogorov: cnp
+  - _self_

@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# Phase 6b.3: Hydra CLI shape.
+#
+# Usage:
+# sbatch --job-name="<job_name>" \
+#        --export=EXPERIMENT_NAME="predprey/default",HYDRA_OVERRIDES="model/predprey=<model> benchmark/predprey=test_real",SEED="<seed>",OPERATION="<train|eval>",ACCOUNT="<account_number>" \
+#        <job_file>
+#
+# SEED is a single integer; the submit script fans the seed dimension
+# across separate SLURM jobs, so each job runs exactly one seed.
+#
+
+#SBATCH --time=01:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=50G
+#SBATCH --gres=gpu:a100:1
+#SBATCH --partition=gpu
+#SBATCH --output=logs/job-output_%x.txt
+
+
+# Read input arguments passed via --export
+EXPERIMENT_NAME=${EXPERIMENT_NAME:?Error: EXPERIMENT_NAME is not set (e.g. predprey/default)}
+HYDRA_OVERRIDES=${HYDRA_OVERRIDES:-""}
+SEED=${SEED:?Error: SEED is not set}
+OPERATION=${OPERATION:?Error: OPERATION is not set. Must be 'train' or 'eval'}
+ACCOUNT=${ACCOUNT:?Error: ACCOUNT is not set}
+
+# Set the account dynamically
+#SBATCH --account=${ACCOUNT}
+
+# Validate operation
+if [[ "$OPERATION" != "train" && "$OPERATION" != "eval" ]]; then
+    echo "Error: OPERATION must be 'train' or 'eval', got '$OPERATION'"
+    exit 1
+fi
+
+# Adjust time limit based on operation (eval typically takes less time)
+if [[ "$OPERATION" == "eval" ]]; then
+    echo "Running evaluation job."
+else
+    echo "Running training job."
+fi
+
+# Load required modules
+module purge
+module load GCCcore/13.2.0
+module load Python/3.11.5
+module load WebProxy/0000
+module load git/2.42.0
+
+# Activate virtual environment
+ENV_PATH="/path/to/your/venv/bin/activate"  # Use absolute path if possible
+if [ ! -f "$ENV_PATH" ]; then
+    echo "Error: Virtual environment not found at $ENV_PATH"
+    exit 1
+fi
+source "$ENV_PATH"
+
+# Define the root directory
+ROOT_DIR="/path/to/fourier-volterra-nps"  # The absolute path to the project's root directory
+
+# Change to the root directory
+if ! cd "$ROOT_DIR"; then
+    echo "Error: Cannot change to root directory $ROOT_DIR. Exiting."
+    exit 1
+fi
+
+# Preflight: fail fast & loud if the project's inode quota is near full.
+# Otherwise SLURM cancels the batch step in ~1s with ExitCode 0:53 and no
+# log file (because it can't open --output), which is very hard to debug.
+proj_id=$(lfs project -d "$ROOT_DIR" 2>/dev/null | awk '{print $1; exit}')
+if [ -n "$proj_id" ]; then
+    files_used=$(lfs quota -q -p "$proj_id" /scratch 2>/dev/null \
+                 | awk '$1 == "/scratch" {print $6}')
+    files_limit=350000
+    if [ -n "$files_used" ] && [ "$files_used" -gt $((files_limit * 95 / 100)) ]; then
+        echo "ERROR: project ($proj_id) inode quota at ${files_used}/${files_limit} (>95%)." >&2
+        echo "       Clean up before re-running, e.g.  rm -rf $ROOT_DIR/wandb/run-*" >&2
+        exit 1
+    fi
+fi
+
+# Stage wandb on node-local NVMe so run dirs never land on quota'd /scratch.
+# On FASTER, SLURM sets TMPDIR=/tmp/job.<JOB_ID> per job (3.5T, noquota,
+# auto-removed at exit). The existing EXIT trap (`wandb sync --clean ...`)
+# below still pushes runs to wandb.ai before SLURM reaps the dir.
+export WANDB_DIR="${TMPDIR:-/tmp}/wandb"
+mkdir -p "$WANDB_DIR"
+
+# Detect number of allocated GPUs for multi-GPU launch
+NUM_GPUS=$(echo "${CUDA_VISIBLE_DEVICES:-0}" | tr ',' '\n' | wc -l)
+
+# Ensure wandb local data is cleaned up even if the job fails
+trap 'wandb sync --clean --clean-force --clean-old-hours 0' EXIT
+
+echo "Running with seed: $SEED"
+if [[ "$NUM_GPUS" -gt 1 ]]; then
+    torchrun --nproc_per_node=$NUM_GPUS ${OPERATION}.py "+experiment=${EXPERIMENT_NAME}" ${HYDRA_OVERRIDES} "misc.seed=${SEED}"
+else
+    python ${OPERATION}.py "+experiment=${EXPERIMENT_NAME}" ${HYDRA_OVERRIDES} "misc.seed=${SEED}"
+fi
+rc=$?
+if [[ $rc -ne 0 ]]; then
+    echo "Python script failed at seed $SEED (exit $rc)"
+    exit $rc
+fi

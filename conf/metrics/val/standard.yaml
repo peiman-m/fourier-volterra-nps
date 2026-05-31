@@ -1,0 +1,112 @@
+# @package phase_configs.validation
+#
+# Validation PhaseConfig preset for benchmarks without a ground-truth
+# predictor (image, predprey, kolmogorov, era5). Two PhaseConfigs — one
+# per ``eval_on`` — each carrying loglik / rmse / crps. Use
+# ``synthetic.yaml`` for synthetic benchmarks, which adds ``gt_loglik``
+# to the query phase.
+#
+# Aggregation is *task-weighted* (mirrors ``test/standard.yaml``): each metric
+# is reduced per task (mean over that task's points) and averaged across tasks,
+# with a companion ``*_std`` spec for the population std across tasks. RMSE uses
+# ``TaskRMSEAccumulator`` and carries no ``*_std`` spec. The checkpoint monitor
+# (``validation_query_loglik_epoch``) is unchanged in key — now task-weighted.
+
+- _target_: utils.experiment.PhaseConfig
+  name: "query"
+  metric_specs:
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: loglik
+      eval_on: query
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.log_likelihood
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskMeanAccumulator
+      step_reducer:
+        _target_: utils.experiment.metrics.MeanReducer
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: loglik_std
+      eval_on: query
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.log_likelihood
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskStdAccumulator
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: rmse
+      eval_on: query
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.squared_error
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskRMSEAccumulator
+      step_reducer:
+        _target_: utils.experiment.metrics.RMSEStepReducer
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: crps
+      eval_on: query
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.gaussian_crps_closed_form
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskMeanAccumulator
+      step_reducer:
+        _target_: utils.experiment.metrics.MeanReducer
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: crps_std
+      eval_on: query
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.gaussian_crps_closed_form
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskStdAccumulator
+- _target_: utils.experiment.PhaseConfig
+  name: "context"
+  metric_specs:
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: loglik
+      eval_on: context
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.log_likelihood
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskMeanAccumulator
+      step_reducer:
+        _target_: utils.experiment.metrics.MeanReducer
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: loglik_std
+      eval_on: context
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.log_likelihood
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskStdAccumulator
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: rmse
+      eval_on: context
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.squared_error
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskRMSEAccumulator
+      step_reducer:
+        _target_: utils.experiment.metrics.RMSEStepReducer
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: crps
+      eval_on: context
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.gaussian_crps_closed_form
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskMeanAccumulator
+      step_reducer:
+        _target_: utils.experiment.metrics.MeanReducer
+    - _target_: utils.experiment.metrics.MetricSpec
+      name: crps_std
+      eval_on: context
+      metric_fn:
+        _target_: utils.experiment.metrics.functions.gaussian_crps_closed_form
+        _partial_: true
+      accumulator:
+        _target_: utils.experiment.metrics.TaskStdAccumulator
