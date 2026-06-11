@@ -655,13 +655,11 @@ to W&B or prints them locally.
 If you use this code, please cite:
 
 ```bibtex
-@inproceedings{
-mohseni2026revisiting,
-title={Revisiting Neural Processes via Fourier Transform and Volterra Series},
-author={Peiman Mohseni and Nick Duffield and Raymond K. W. Wong},
-booktitle={Forty-third International Conference on Machine Learning},
-year={2026},
-url={https://openreview.net/forum?id=UEeBGrOGa8}
+@article{mohseni2026revisiting,
+  title={Revisiting Neural Processes via Fourier Transform and Volterra Series},
+  author={Mohseni, Peiman and Duffield, Nick and Wong, Raymond KW},
+  journal={arXiv preprint arXiv:2606.01172},
+  year={2026}
 }
 ```
 
