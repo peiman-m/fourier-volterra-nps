@@ -1,0 +1,83 @@
+# @package _global_
+
+defaults:
+  - /metrics/train: nll
+  - /metrics/val: standard
+  - /metrics/test: standard
+  - _self_
+
+model:
+  _target_: nps.models.ConvCNP
+  encoder: ${convcnp_encoder}
+  decoder: ${convcnp_decoder}
+  likelihood: ${likelihood}
+
+convcnp_encoder:
+  _target_: nps.core.encoders.ConvCNPEncoder
+  convnet: ${cnn}
+  grid_encoder: ${grid_encoder}
+  grid_decoder: ${grid_decoder}
+  z_encoder: ${z_encoder}
+  grid_resolution: ${params.grid_resolution}
+  grid_margin: ${params.grid_margin}
+  grid_size_multiple_of: ${params.grid_size_multiple_of}
+
+grid_encoder:
+  _target_: nps.core.convolutions.SetConv
+  spatial_dim: ${params.x_dim}
+  in_channels: ${params.y_dim}
+  init_lengthscale: ${params.init_lengthscale}
+  learnable_lengthscale: true
+  divide_by_density: true
+
+grid_decoder:
+  _target_: nps.core.convolutions.SetConv
+  spatial_dim: ${params.x_dim}
+  in_channels: ${z_encoder.out_dim}
+  init_lengthscale: ${params.init_lengthscale}
+  learnable_lengthscale: true
+  divide_by_density: false
+
+z_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'2 * ${params.y_dim}'}
+  out_dim: ${params.embed_channels}
+  num_layers: 2
+  layer_dim: ${params.embed_channels}
+
+convcnp_decoder:
+  _target_: nps.core.decoders.ConvCNPDecoder
+  z_decoder: ${z_decoder}
+
+z_decoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'2 * ${params.embed_channels}'}
+  out_dim: ${eval:'2 * ${params.y_dim}'}
+  num_layers: 2
+  layer_dim: ${params.embed_channels}
+
+likelihood:
+  _target_: nps.likelihoods.gaussian.HeteroscedasticNormalLikelihood
+
+cnn:
+  _target_: nps.core.cnns.UNet
+  spatial_dim: ${params.x_dim}
+  in_channels: ${params.embed_channels}
+  out_channels: ${params.embed_channels}
+  channels: ${params.channels}
+  kernels: ${params.cnn_kernel_size}
+  separable: false
+  residual: true
+
+params:
+  embed_channels: 256
+  channels: [288, 288, 288, 512, 512, 512]
+  cnn_kernel_size: 11
+  grid_resolution: ${setconv_grid_params.resolution}
+  grid_margin: ${setconv_grid_params.margin}
+  grid_size_multiple_of: ${setconv_grid_params.multiple_of}
+  init_lengthscale: ${setconv_grid_params.init_lengthscale}
+
+model_name: ConvCNP-UNet-GR${params.grid_resolution}-EmbD${params.embed_channels}-CNNK${params.cnn_kernel_size}-CNNSep${cnn.separable}-CNNRes${cnn.residual}
+# model_name: ConvCNP-UNet
+

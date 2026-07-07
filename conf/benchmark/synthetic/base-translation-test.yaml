@@ -1,0 +1,31 @@
+# @package _global_
+#
+# Translation-shift evaluation. Inherits the full ``base`` benchmark tree and
+# overrides ONLY what genuinely differs for the shift sweep, so the two configs
+# can't drift apart:
+#   - artifacts nested under ${misc.input_generator.eval} so different input
+#     shifts (uniform-shift-{0,3,...}) don't clobber each other's metrics/plots.
+#     Local metrics are written as ``test_results_<ckpt>.json`` *inside*
+#     metrics_dirpath, so nesting the dir is what keeps shifts separate
+#     (eval_name only names the W&B run, which is disabled here).
+#   - W&B logging disabled (metrics are still saved locally).
+#   - eval_name suffixed with the shift so that, if W&B is re-enabled, each shift
+#     becomes its own uniquely-named run instead of colliding. Inert while W&B is
+#     off (only names the W&B run). NB: for this to work, each shift must run as a
+#     separate run — do NOT pass a single shared misc.wandb_run_id across shifts,
+#     or they'd overwrite each other's summary keys (prefixed only by ckpt type).
+#
+# The shifted test inputs come entirely from the selected input_generator group
+# (e.g. ``benchmark/synthetic/input_generator=uniform-shift-6``), whose test
+# range ``base.yaml`` already consumes via ${input_generators.test} — so no
+# data/dataset overrides are needed here.
+
+defaults:
+  - base
+  - _self_
+
+misc:
+  wandb_logging_enabled: false
+  metrics_dirpath: ${.artifacts_dir}/metrics/${.input_generator.eval}
+  plots_dirpath: ${.artifacts_dir}/plots/${.input_generator.eval}
+  eval_name: ${.name}_eval_${.input_generator.eval}

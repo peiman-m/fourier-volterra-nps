@@ -1,0 +1,35 @@
+# @package _global_
+# Chain ``base`` via defaults so selecting
+# ``benchmark/predprey=test_real`` pulls the full train/validation/plot/misc
+# tree from ``base.yaml`` and then overlays the real-test-specific
+# fields via ``_self_``. Without the defaults chaining,
+# ``data.datasets.{train,validation}`` would be silently dropped on eval.
+
+defaults:
+  - base
+  - _self_
+
+data:
+  datasets:
+    test:
+      _target_: utils.data.PredPreyRealDataset
+      # LynxHare.txt is downloaded automatically on first use and cached here.
+      data_path: dataset-files/predprey
+      batch_size: 32
+      samples_per_epoch: 64_000
+      drop_last: false
+      min_nc: 5
+      max_nc: 50
+      population_rescale_factor: 0.01
+      time_rescale_factor: 0.1
+      deterministic: true
+      deterministic_seed: 2026
+
+plot_fn:
+  # Real data spans [0, 9] after time_rescale_factor=0.1; set the eval grid to
+  # match so the prediction line doesn't extend beyond the observed trajectory.
+  xc_range_eval: [0.0, 9.0]
+  xq_range_eval: [0.0, 9.0]
+
+misc:
+  metrics_dirpath: ${misc.artifacts_dir}/metrics/real

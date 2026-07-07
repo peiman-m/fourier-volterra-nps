@@ -1,0 +1,16 @@
+# @package _global_
+# Eval region: west (western Europe). See eval_region/center.yaml for rationale.
+
+data:
+  datasets:
+    test:
+      processor:
+        subset_coordinate_ranges:
+          test:
+            latitude: [42, 53]
+            longitude: [-4, 8]
+
+misc:
+  eval_region: west
+  eval_name: ${.name}_eval_${.eval_region}
+  metrics_dirpath: ${.artifacts_dir}/metrics/${.eval_region}

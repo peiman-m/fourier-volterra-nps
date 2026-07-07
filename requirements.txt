@@ -1,0 +1,144 @@
+# =============================================================================
+# Exact environment used to produce the results reported in the paper.
+# Generated with `pip freeze` from the training/evaluation virtualenv.
+#
+# Platform : Linux HPC cluster, NVIDIA A100 GPUs
+# Python   : 3.11.5
+# CUDA     : 12.4   (torch 2.5.1+cu124, cuDNN 9.1)
+#
+# Reproduce on an HPC system by loading the matching toolchain modules, then
+# creating a fresh virtualenv:
+#
+#     module purge
+#     module load GCCcore/13.2.0 Python/3.11.5 git/2.42.0
+#     python -m venv env && source env/bin/activate
+#     pip install -r requirements.txt
+#
+# The nvidia-*-cu12 wheels and triton are CUDA 12.4 runtime dependencies pulled
+# in by torch==2.5.1 on Linux. On a CPU-only machine (e.g. macOS, used here only
+# for development/debugging) install a CPU build of torch/torchvision/torchaudio
+# and omit the nvidia-*-cu12 and triton lines below.
+# =============================================================================
+
+aiohappyeyeballs==2.4.4
+aiohttp==3.11.11
+aiosignal==1.3.2
+annotated-types==0.7.0
+antlr4-python3-runtime==4.9.3
+attrs==24.3.0
+blosc2==3.3.2
+Cartopy==0.25.0
+cdsapi==0.7.6
+certifi==2024.12.14
+cftime==1.6.4.post1
+charset-normalizer==3.4.1
+check-shapes==1.1.1
+click==8.1.8
+cloudpickle==3.1.1
+contourpy==1.3.1
+cycler==0.12.1
+dask==2025.7.0
+docker-pycreds==0.4.0
+dropstackframe==0.1.1
+ecmwf-datastores-client==0.4.0
+einops==0.8.0
+filelock==3.16.1
+fonttools==4.55.3
+frozenlist==1.5.0
+fsspec==2024.12.0
+gitdb==4.0.11
+GitPython==3.1.43
+gpytorch==1.13
+h5netcdf==1.6.4
+h5py==3.14.0
+HiYaPyCo==0.7.0
+hydra-core==1.3.2
+idna==3.10
+importlib_metadata==8.7.0
+iniconfig==2.3.0
+jax==0.4.27
+jax-cfd==0.2.1
+jaxlib==0.4.27
+jaxtyping==0.2.19
+Jinja2==3.1.5
+joblib==1.4.2
+kagglehub==0.3.12
+kiwisolver==1.4.8
+lark==1.2.2
+lightning==2.5.0.post0
+lightning-utilities==0.11.9
+linear-operator==0.5.3
+locket==1.0.0
+MarkupSafe==3.0.2
+matplotlib==3.10.0
+ml_dtypes==0.5.3
+mpmath==1.3.0
+msgpack==1.1.0
+multidict==6.1.0
+multiurl==0.3.7
+ndindex==1.9.2
+netCDF4==1.7.2
+networkx==3.4.2
+numexpr==2.10.2
+numpy==2.2.1
+nvidia-cublas-cu12==12.4.5.8
+nvidia-cuda-cupti-cu12==12.4.127
+nvidia-cuda-nvrtc-cu12==12.4.127
+nvidia-cuda-runtime-cu12==12.4.127
+nvidia-cudnn-cu12==9.1.0.70
+nvidia-cufft-cu12==11.2.1.3
+nvidia-curand-cu12==10.3.5.147
+nvidia-cusolver-cu12==11.6.1.9
+nvidia-cusparse-cu12==12.3.1.170
+nvidia-nccl-cu12==2.21.5
+nvidia-nvjitlink-cu12==12.4.127
+nvidia-nvtx-cu12==12.4.127
+omegaconf==2.3.0
+opt_einsum==3.4.0
+packaging==24.2
+pandas==2.2.3
+partd==1.4.2
+pillow==11.0.0
+platformdirs==4.3.6
+pluggy==1.6.0
+propcache==0.2.1
+protobuf==5.29.2
+psutil==6.1.1
+py-cpuinfo==9.0.0
+pydantic==2.10.4
+pydantic_core==2.27.2
+Pygments==2.20.0
+pyparsing==3.2.1
+pyproj==3.7.2
+pyshp==2.3.1
+python-dateutil==2.9.0.post0
+pytorch-lightning==2.5.0.post0
+pytz==2025.1
+PyYAML==6.0.2
+requests==2.32.3
+scikit-learn==1.6.0
+scipy==1.14.1
+sentry-sdk==2.19.2
+setproctitle==1.3.4
+shapely==2.1.1
+six==1.17.0
+smmap==5.0.1
+sympy==1.13.1
+tables==3.10.2
+threadpoolctl==3.5.0
+toolz==1.0.0
+torch==2.5.1
+torchaudio==2.5.1
+torchmetrics==1.6.1
+torchvision==0.20.1
+tqdm==4.67.1
+tree-math==0.2.1
+triton==3.1.0
+typeguard==4.4.1
+typing_extensions==4.12.2
+tzdata==2025.1
+urllib3==2.3.0
+wandb==0.25.1
+xarray==2025.9.0
+yarl==1.18.3
+zipp==3.23.0

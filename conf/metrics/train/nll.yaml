@@ -1,0 +1,12 @@
+# @package phase_configs.train
+#
+# Train PhaseConfig preset. Carries the loss callable; ``metric_specs``
+# is intentionally empty — train-time epoch metrics rely on Lightning's
+# ``self.log("train_loss", ...)`` in ``LitWrapper._run_step``. Add specs
+# explicitly in a model yaml override if a benchmark needs train-side
+# accumulators.
+
+_target_: utils.experiment.PhaseConfig
+loss_fn:
+  _target_: utils.experiment.metrics.losses.nll_loss
+  _partial_: true

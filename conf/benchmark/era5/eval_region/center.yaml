@@ -1,0 +1,20 @@
+# @package _global_
+# Eval region: center (central Europe; same window the models were trained on).
+# Named "center" rather than "train" to avoid confusion with the training
+# operation. Selects the test latitude/longitude window and tags W&B run
+# name + local metrics dir with the region, so independent evals on disjoint
+# regions don't collide in W&B summary keys or in artifacts/.../metrics/.
+
+data:
+  datasets:
+    test:
+      processor:
+        subset_coordinate_ranges:
+          test:
+            latitude: [42, 53]
+            longitude: [8, 28]
+
+misc:
+  eval_region: center
+  eval_name: ${.name}_eval_${.eval_region}
+  metrics_dirpath: ${.artifacts_dir}/metrics/${.eval_region}

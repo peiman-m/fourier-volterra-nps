@@ -1,0 +1,25 @@
+# Top-level Hydra composer. ``misc/base`` provides the default ``misc``
+# block (logging, checkpointing, hardware, seed/epochs); experiment
+# composers override it via ``+experiment=<bench>/<model>``.
+#
+# The ``hydra.*`` block preserves the artifact layout:
+#   - ``job.chdir: false`` — Hydra doesn't cwd into its output dir,
+#     so the project's relative-path assumptions (W&B cleanup,
+#     checkpoint resume, plot dirs) keep working.
+#   - ``run.dir: ${misc.artifacts_dir}`` — single-job runs write into
+#     ``artifacts/<exp>/model=<run>/seed=<seed>``.
+#   - ``sweep.dir`` / ``sweep.subdir`` — multirun sweeps nest under
+#     ``artifacts/.../sweeps/<job_num>``.
+
+defaults:
+  - misc: base
+  - _self_
+
+hydra:
+  job:
+    chdir: false
+  run:
+    dir: ${misc.artifacts_dir}
+  sweep:
+    dir: ${misc.artifacts_dir}/sweeps
+    subdir: ${hydra.job.num}

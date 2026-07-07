@@ -1,0 +1,73 @@
+# @package _global_
+
+defaults:
+  - /metrics/train: nll
+  - /metrics/val: standard
+  - /metrics/test: standard
+  - _self_
+
+model:
+  _target_: nps.models.TNP
+  encoder: ${tnp_encoder}
+  decoder: ${tnp_decoder}
+  likelihood: ${likelihood}
+
+tnp_encoder:
+  _target_: nps.core.encoders.TNPEncoder
+  transformer_encoder: ${transformer_encoder}
+  xy_encoder: ${xy_encoder}
+
+transformer_encoder:
+  _target_: nps.core.transformers.EfficientQueryTransformerEncoder
+  layer: ${transformer_layer}
+  num_layers: ${params.num_layers}
+  share_params: ${params.share_params}
+
+transformer_layer:
+  _target_: nps.core.attention_layers.MultiHeadAttentionLayer
+  attention: ${attention}
+  embed_dim: ${params.embed_dim}
+  feedforward_dim: ${params.feedforward_dim}
+  norm_first: ${params.norm_first}
+
+attention:
+  _target_: nps.core.attentions.MultiHeadAttention
+  q_dim: ${params.embed_dim}
+  k_dim: ${params.embed_dim}
+  v_dim: ${params.embed_dim}
+  num_heads: ${params.num_heads}
+  head_dim: ${params.head_dim}
+
+xy_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'${params.y_dim} + ${params.x_dim} + 1'}
+  out_dim: ${params.embed_dim}
+  num_layers: 2
+  layer_dim: ${params.embed_dim}
+
+tnp_decoder:
+  _target_: nps.core.decoders.TNPDecoder
+  z_decoder: ${z_decoder}
+
+z_decoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${params.embed_dim}
+  out_dim: ${eval:'2 * ${params.y_dim}'}
+  num_layers: 2
+  layer_dim: ${params.embed_dim}
+
+likelihood:
+  _target_: nps.likelihoods.gaussian.HeteroscedasticNormalLikelihood
+
+params:
+  embed_dim: 768
+  num_heads: 12
+  head_dim: 64
+  feedforward_dim: 3840
+  norm_first: true
+  num_layers: 6
+  share_params: false
+
+model_name: EQTNP-NL${params.num_layers}-EmbD${params.embed_dim}-NH${params.num_heads}xHD${params.head_dim}-FFD${params.feedforward_dim}-SP${params.share_params}
+# model_name: EQTNP
+

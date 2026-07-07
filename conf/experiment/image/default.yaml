@@ -1,0 +1,13 @@
+# @package _global_
+# Parameterized composer for the image benchmark. Pick the model via the
+# ``model/image`` group and (optionally) swap datasets via the
+# ``benchmark/image`` group, e.g.
+#   python train.py +experiment=image/default model/image=cnp
+#   python train.py +experiment=image/default model/image=convcnp-resnet benchmark/image=base-dtd
+# Any entry under ``conf/model/image/`` is selectable this way.
+
+defaults:
+  - /benchmark/image: base-cifar10
+  - /optimizer: adamw
+  - /model/image: cnp
+  - _self_

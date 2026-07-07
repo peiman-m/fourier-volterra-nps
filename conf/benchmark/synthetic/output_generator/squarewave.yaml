@@ -1,0 +1,31 @@
+# @package _global_
+
+defaults:
+  # Square wave has no closed-form ground truth, so its batches carry no
+  # gt_pred. Override the model's default ``synthetic`` metrics preset
+  # (which requests the GP-only ``gt_loglik``) with the gt-free
+  # ``standard`` preset; requesting gt_loglik here would fail loudly at
+  # the first validation/test step.
+  - override /metrics/val: standard
+  - override /metrics/test: standard
+  - _self_
+
+output_generators:
+  train:
+    _target_: utils.data.SquareWaveGenerator
+    min_freq: 0.5
+    max_freq: 5.0
+    noise_std: 0.05
+  validation:
+    _target_: utils.data.SquareWaveGenerator
+    min_freq: 0.5
+    max_freq: 5.0
+    noise_std: 0.05
+  test:
+    _target_: utils.data.SquareWaveGenerator
+    min_freq: 0.5
+    max_freq: 5.0
+    noise_std: 0.05
+
+misc:
+  output_generator: squarewave

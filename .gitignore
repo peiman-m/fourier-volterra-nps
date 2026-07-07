@@ -1,0 +1,41 @@
+# Python bytecode and cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# MacOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+*.json
+job*.txt
+*.txt.save
+/wandb/
+/checkpoints/
+artifacts/
+
+# Virtual environment directories
+env/
+venv/
+
+# VS Code settings
+.vscode/
+
+# data files
+*.csv
+*.ts
+*.zip
+*.tar.gz
+dataset-files/

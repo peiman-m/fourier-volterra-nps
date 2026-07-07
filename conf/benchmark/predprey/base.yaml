@@ -1,0 +1,117 @@
+# @package _global_
+
+data:
+  datasets:
+    # Base configuration for all datasets
+    _shared_dataset_configs: &shared_dataset_configs
+      min_nc: 5
+      max_nc: 50
+      max_prey_population: 500
+      max_pred_population: 500
+      population_rescale_factor: 0.01
+      time_rescale_factor: 0.1
+      trajectory_pool_size: 2048
+      xc_range: [0, 100]
+      xq_range: [0, 100]
+      batch_size: 32
+      drop_last: false
+
+    train:
+      _target_: utils.data.PredPreySimDataset
+      min_nq: 5
+      max_nq: 50
+      samples_per_epoch: 16_000
+      # trajectory_pool_size: 2048
+      <<: *shared_dataset_configs
+
+    validation:
+      _target_: utils.data.PredPreySimDataset
+      min_nq: 128
+      max_nq: 128
+      samples_per_epoch: 8000
+      deterministic: true
+      deterministic_seed: 2025
+      <<: *shared_dataset_configs
+
+plot_fn:
+  _target_: utils.plot_fn.PredPreyPlotter
+  # Sim data is sampled from raw time [0, 100] * time_rescale_factor=0.1 → [0, 10].
+  # Real data (Hudson Bay, 1845–1935) rescales to [0, 9.0].
+  # The plot range [0, 10] is correct for sim; for test_real the model prediction
+  # extends ~1 unit beyond the observed ground-truth trajectory (minor extrapolation).
+  xc_range_eval: [0.0, 10.0]
+  xq_range_eval: ${.xc_range_eval}
+  # xc_range_train: ${.xc_range_eval}
+  # xq_range_train: ${.xc_range_eval}
+  y_range: [0.0, 2.5]
+  figsize: [6.0, 4.0]
+  points_per_unit: 48
+  dim_labels: ["Prey", "Predator"]
+  plot_mode: "dense"
+  savefig: false
+  show_plots: false
+  logging: true   # Will work if wandb_logging_enabled is true
+  # plot_dir: ${misc.plots_dirpath}
+
+setconv_grid_params:
+  resolution: ${eval:'1.0 / 48.0'}
+  margin: 0.5
+  multiple_of: 64
+  init_lengthscale: ${eval:'2 * ${.resolution}'}
+
+params:
+  x_dim: 1
+  y_dim: 2
+
+misc:
+  # Experiment Naming and Organization
+  experiment_name: PredPrey
+  model_run_name: ${model_name}-seed=${.seed}
+
+  # Logging Configuration
+  wandb_logging_enabled: true   # Master toggle for W&B logging
+  wandb_user: your-wandb-entity
+  project: FVNP-${.experiment_name}
+  name: ${.model_run_name}
+  eval_name: ${.name}_eval
+  hardware_callback: true       # Hardware and Performance
+
+  # Checkpointing Configuration
+  checkpointing:
+    local: true
+    wandb: false
+    save_weights_only: true
+    enable_version_counter: false
+    resume_from: null
+    save_last: true
+    save_periodic_every_n_epochs: null
+    best:
+      monitor: "validation_query_loglik_epoch"
+      mode: "max"
+      save_top_k: 1
+
+  default_lightning_logger: false         # Enable/disable PyTorch lightning's default local log files
+
+  # Directory structure for local artifacts
+  artifacts_dir: artifacts/${.experiment_name}/x=${params.x_dim}d_y=${params.y_dim}d/model=${model_name}/seed=${.seed}
+  checkpoint_dirpath: ${.artifacts_dir}/checkpoints
+  metrics_dirpath: ${.artifacts_dir}/metrics
+  plots_dirpath: ${.artifacts_dir}/plots
+
+  # Plotting Configuration
+  num_plots: 6
+  plot_interval: 10
+  plot_fn: ${plot_fn}
+
+  # LR Scheduler Configuration
+  lr_scheduler:
+    enabled: true
+    t_max: ${misc.epochs}
+    eta_min: 1.0e-6
+
+  # Training Settings
+  seed: 0
+  epochs: 250
+  check_validation_every_n_epoch: 1
+  enable_progress_bar: true
+  gradient_clip_val: 0.5
