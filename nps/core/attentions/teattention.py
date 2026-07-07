@@ -81,11 +81,17 @@ class MultiHeadTEAttention(BaseMultiHeadAttention):
         dots = einops.rearrange(dots, "b nq nkv h -> b h nq nkv")
 
         if mask is not None:
-            # Additive float mask (0 keep, -inf drop), matching MultiHeadAttention
-            # and the encoders' mask builders. Added post-kernel so masked pairs
-            # go to -inf before softmax regardless of the kernel's output.
+            # Follow scaled_dot_product_attention's convention (as MultiHeadAttention
+            # does), so both attention modules accept the same masks. Applied
+            # post-kernel so masked pairs reach softmax as -inf regardless of the
+            # kernel's output.
             mask = einops.repeat(mask, "b nq nkv -> b h nq nkv", h=self.num_heads)
-            dots = dots + mask
+            if mask.dtype == torch.bool:
+                # Boolean: True = keep, False = drop.
+                dots = dots.masked_fill(~mask, -float("inf"))
+            else:
+                # Float: additive bias (0 keep, -inf drop), as the encoders build.
+                dots = dots + mask
 
         # (m, num_heads, nq, nkv).
         attn = dots.softmax(dim=-1)
