@@ -14,12 +14,13 @@ class Interpolator(nn.Module):
     Args:
         mode: Interpolation mode override. If None, uses dimension-appropriate defaults.
         align_corners: Whether to align corners for interpolation.
-        antialias: Whether to use antialiasing (not supported for 3D).
+        antialias: Whether to use antialiasing (only honored for the bilinear/
+            bicubic modes; ignored otherwise, as torch supports it only there).
     """
-    
+
     # Class-level default parameters for better performance
     _DEFAULT_PARAMS: dict[int, dict[str, Any]] = {
-        1: {"mode": "bicubic", "align_corners": True, "antialias": True},
+        1: {"mode": "linear", "align_corners": True, "antialias": False},
         2: {"mode": "bicubic", "align_corners": True, "antialias": True},
         3: {"mode": "trilinear", "align_corners": True, "antialias": False},
     }
@@ -53,10 +54,15 @@ class Interpolator(nn.Module):
             params["mode"] = self._mode_override
         if self._align_corners_override is not None:
             params["align_corners"] = self._align_corners_override
-        if self._antialias_override is not None and spatial_dim <= 2:
-            # Only apply antialias for 1D and 2D (not supported in 3D)
+        if self._antialias_override is not None and params["mode"] in (
+            "bilinear",
+            "bicubic",
+        ):
+            # torch supports antialias only for the bilinear/bicubic kernels;
+            # ignore the override for other modes rather than letting
+            # interpolate raise.
             params["antialias"] = self._antialias_override
-            
+
         return params
 
     def forward(
@@ -104,25 +110,13 @@ class Interpolator(nn.Module):
         if current_size == out_size:
             return tensor
 
-        # Special handling for 1D case
-        need_unsqueeze = False
-        if spatial_dim == 1:
-            tensor = tensor[..., None, :]  # Add height dimension for 1D
-            out_size = (1, *out_size)
-            need_unsqueeze = True
-
-        # Get interpolation parameters
+        # Each spatial rank interpolates on its native tensor shape: 1D linear
+        # on [B, C, W], 2D bicubic on [B, C, H, W], 3D trilinear on [B, C, D, H, W].
         interp_params = self._get_interp_params(spatial_dim)
 
-        tensor = torch.nn.functional.interpolate(
+        return torch.nn.functional.interpolate(
             tensor, size=out_size, **interp_params
         )
-
-        # Remove extra dimension for 1D case
-        if need_unsqueeze:
-            tensor = tensor.squeeze(-2)
-
-        return tensor
 
 
 class UpSamplingNd(nn.Module):
