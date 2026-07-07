@@ -48,20 +48,27 @@ class Interpolator(nn.Module):
         
         # Start with defaults
         params = self._DEFAULT_PARAMS[spatial_dim].copy()
-        
-        # Apply overrides if provided
+
+        # Resolve the mode first; align_corners and antialias are only accepted
+        # by a subset of kernels, so we gate them on the resolved mode and drop
+        # incompatible kwargs rather than letting interpolate raise.
         if self._mode_override is not None:
             params["mode"] = self._mode_override
-        if self._align_corners_override is not None:
-            params["align_corners"] = self._align_corners_override
-        if self._antialias_override is not None and params["mode"] in (
-            "bilinear",
-            "bicubic",
-        ):
-            # torch supports antialias only for the bilinear/bicubic kernels;
-            # ignore the override for other modes rather than letting
-            # interpolate raise.
-            params["antialias"] = self._antialias_override
+        mode = params["mode"]
+
+        # align_corners: only the interpolating kernels accept it.
+        if mode in ("linear", "bilinear", "bicubic", "trilinear"):
+            if self._align_corners_override is not None:
+                params["align_corners"] = self._align_corners_override
+        else:
+            params.pop("align_corners", None)
+
+        # antialias: only bilinear/bicubic accept it.
+        if mode in ("bilinear", "bicubic"):
+            if self._antialias_override is not None:
+                params["antialias"] = self._antialias_override
+        else:
+            params.pop("antialias", None)
 
         return params
 
