@@ -1,7 +1,7 @@
 import einops
 import torch
 
-from ...utils.helpers import get_clones, warn_once
+from ...utils.helpers import get_clones
 from ..attention_layers import MultiHeadAttentionLayer
 from .base import BaseTransformerEncoder
 
@@ -45,13 +45,7 @@ class ISTransformerEncoder(BaseTransformerEncoder):
         self,
         zc: torch.Tensor,
         zq: torch.Tensor,
-        mask: torch.Tensor | None = None
     ) -> torch.Tensor:
-        if mask is not None:
-            warn_once(
-                "mask is not currently being used in ISTransformerEncoder."
-            )
-
         # Expand z_pt for batch
         batch_size = zc.shape[0]
         z_pt = einops.repeat(self.z_pt, "n e -> b n e", b=batch_size)

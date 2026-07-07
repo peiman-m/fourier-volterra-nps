@@ -7,7 +7,6 @@ from ..transformers import (
     EfficientQueryTransformerEncoder,
     ISTransformerEncoder,
     PerceiverEncoder,
-    TransformerEncoder,
 )
 from .base import BaseEncoder
 
@@ -16,8 +15,7 @@ class TNPEncoder(BaseEncoder):
     def __init__(
         self,
         transformer_encoder: (
-            TransformerEncoder
-            | EfficientQueryTransformerEncoder
+            EfficientQueryTransformerEncoder
             | ISTransformerEncoder
             | PerceiverEncoder
         ),
@@ -53,18 +51,6 @@ class TNPEncoder(BaseEncoder):
 
         return zc, zq
 
-    def _create_attention_mask(
-        self, batch_size: int, nc: int, nq: int, device: torch.device
-    ) -> torch.Tensor:
-        # Create a mask where only context points can be attended to
-        total_points = nc + nq
-        mask = torch.full(
-            (batch_size, total_points, total_points), float("-inf"), device=device
-        )
-        mask[:, :, :nc] = 0.0
-
-        return mask
-
     def forward(
         self, xc: torch.Tensor, yc: torch.Tensor, xq: torch.Tensor
     ) -> torch.Tensor:
@@ -74,9 +60,7 @@ class TNPEncoder(BaseEncoder):
         # Encode inputs
         zc, zq = self._encode_inputs(xc, yc, xq, yq)
 
-        # Create attention mask
-        batch_size, nc, nq = *xc.shape[:2], xq.shape[1]
-        mask = self._create_attention_mask(batch_size, nc, nq, xc.device)
-
-        # Apply transformer encoder
-        return self.transformer_encoder(zc, zq, mask)
+        # Apply transformer encoder. These two-stream encoders enforce the
+        # "queries attend to context, context attends only to itself" structure
+        # architecturally, so no attention mask is needed.
+        return self.transformer_encoder(zc, zq)

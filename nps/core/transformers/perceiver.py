@@ -1,7 +1,7 @@
 import einops
 import torch
 
-from ...utils.helpers import get_clones, warn_once
+from ...utils.helpers import get_clones
 from ..attention_layers import MultiHeadAttentionLayer
 from .base import BaseTransformerEncoder
 
@@ -43,7 +43,6 @@ class PerceiverEncoder(BaseTransformerEncoder):
         self,
         zc: torch.Tensor,
         zq: torch.Tensor,
-        mask: torch.Tensor | None = None
     ) -> torch.Tensor:
         """
         Forward pass through the perceiver encoder.
@@ -51,16 +50,10 @@ class PerceiverEncoder(BaseTransformerEncoder):
         Args:
             zc: Context representations [batch_size, num_context, embed_dim]
             zq: Query representations [batch_size, num_query, embed_dim]
-            mask: Optional attention mask
 
         Returns:
             Enhanced query representations [batch_size, num_query, embed_dim]
         """
-        if mask is not None:
-            warn_once(
-                "mask is not currently being used in PerceiverEncoder."
-            )
-
         # Expand pseudo tokens for batch
         batch_size = zc.shape[0]
         z_pt = einops.repeat(self.z_pt, "n e -> b n e", b=batch_size)

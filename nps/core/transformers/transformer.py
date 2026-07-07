@@ -1,5 +1,3 @@
-import warnings
-
 import torch
 
 from ...utils.helpers import get_clones
@@ -71,12 +69,7 @@ class EfficientQueryTransformerEncoder(BaseTransformerEncoder):
         self,
         zc: torch.Tensor,
         zq: torch.Tensor,
-        mask: torch.Tensor | None = None
     ) -> torch.Tensor:
-        if mask is not None:
-            warnings.warn(
-                "The mask will be ignored in the Efficient-Query TNP Encoder."
-            )
         for context_to_context_layer, context_to_query_layer in zip(
             self.context_to_context_layers, self.context_to_query_layers
         ):
