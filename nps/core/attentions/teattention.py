@@ -27,8 +27,8 @@ class MultiHeadTEAttention(BaseMultiHeadAttention):
         inner_dim = self.head_dim * self.num_heads
         project_out = not (self.num_heads == 1 and self.head_dim == self.v_dim)
 
-        self.to_k = nn.Linear(self.q_dim, inner_dim, bias=False)
-        self.to_q = nn.Linear(self.k_dim, inner_dim, bias=False)
+        self.to_q = nn.Linear(self.q_dim, inner_dim, bias=False)
+        self.to_k = nn.Linear(self.k_dim, inner_dim, bias=False)
         self.to_v = nn.Linear(self.v_dim, inner_dim, bias=False)
         self.to_out = (
             nn.Sequential(nn.Linear(inner_dim, self.v_dim), nn.Dropout(self.p_dropout))
