@@ -39,11 +39,15 @@ nps/
 
 ## Models (`nps/models/`)
 
-All models extend `BaseNeuralProcess` and share the same forward signature:
+All models extend `BaseNeuralProcess`. Off-grid models share one forward
+signature:
 
 ```python
 output: torch.distributions.Distribution = model(xc, yc, xq)
 ```
+
+`GridConvCNP` is the exception: it takes grid tensors `model(y_mc, y, y_mq)`
+(context mask, values, query mask) instead of scattered points.
 
 | Model | Class | Encoder | Decoder | CNN backbone |
 |---|---|---|---|---|
@@ -133,7 +137,7 @@ Each convolution block wraps a convolution with a residual connection and activa
 | `SetFourierConvBlock` | `setfourierconv_block.py` | `SetFourierConv` |
 | `SetFourierVolterraConvBlock` | `setfourierconv_block.py` | `SetFourierVolterraConv` |
 
-The `ResidualBlock` helper in `base.py` applies `layer_post(x + layer(x))`, used internally by all block types.
+The `ResidualBlock` helper in `base.py` applies `layer_post(layer1(x) + layer2(x))` (a two-branch sum, not a bare skip connection), used internally by all block types.
 
 ---
 
@@ -153,11 +157,12 @@ CNNs stack convolution blocks into a feedforward network. All extend `BaseCNN`.
 `SetFourierConvNet` is the backbone for `SetFourierConvCNP`. Because computing the Fourier phase factors for a set of positions is expensive, `SetFourierConvNet` computes them **once** using the first block's convolution layer and passes them to all subsequent blocks:
 
 ```python
-# Computed once:
-context_translation_ft  = conv.compute_translation_operands(xc)
-context_ift_operands    = conv.compute_ift_operands(xc)
-query_translation_ft    = conv.compute_translation_operands(xc)
-query_ift_operands      = conv.compute_ift_operands(xq)
+# Computed once, from the first block's conv layer:
+context_translation_ft  = first_conv.compute_translation_operands(xc)
+context_ift_operands     = first_conv.compute_ift_operands(xc)
+query_ift_operands       = first_conv.compute_ift_operands(xq)
+# The query stream reuses context_translation_ft (xkv = xc for both),
+# so no separate query translation operand is computed.
 
 # Then passed to every block in the stack.
 ```
@@ -219,16 +224,19 @@ Used as the context-processing backbone in TNP/TETNP models.
 
 | Class | File | Description |
 |---|---|---|
-| `TransformerEncoder` | `transformer.py` | Standard self-attention transformer |
+| `TransformerEncoder` | `transformer.py` | Standard self-attention transformer (single stream) |
+| `EfficientQueryTransformerEncoder` | `transformer.py` | Two-stream: context→context self-attention, then context→query cross-attention |
 | `PerceiverEncoder` | `perceiver.py` | Cross-attention between latent tokens and context |
 | `ISTransformerEncoder` | `istransformer.py` | Inducing-set transformer (sparse attention) |
-| `TETransformerEncoder` | `tetransformer.py` | Translation-equivariant transformer |
+| `TETransformerEncoder` | `tetransformer.py` | Translation-equivariant self-attention transformer |
+| `TEEfficientQueryTransformerEncoder` | `tetransformer.py` | TE two-stream (efficient query) |
 | `TEISTransformerEncoder` | `teistransformer.py` | TE + inducing-set |
 | `TEPerceiverEncoder` | `teperceiver.py` | TE + Perceiver |
 
-The `TETransformerEncoder` has two variants:
-- **Standard**: Self-attention over all positions together.
-- **Efficient query**: Separate context→context self-attention, then context→query cross-attention.
+Both the plain and TE families offer a standard and an efficient-query form,
+as two separate classes:
+- **Standard** (`TransformerEncoder` / `TETransformerEncoder`): self-attention over all positions together; accepts an optional attention `mask`.
+- **Efficient query** (`EfficientQueryTransformerEncoder` / `TEEfficientQueryTransformerEncoder`): separate context→context self-attention, then context→query cross-attention. This is what `TNPEncoder`/`TETNPEncoder` use.
 
 ---
 
