@@ -66,13 +66,13 @@ class MLP(nn.Module):
                     )
                 layers = (layer_dim,) * (num_layers or 1)
 
-            elif isinstance(layer_dim, list):
+            elif isinstance(layer_dim, (list, tuple)):
                 if num_layers is not None:
                     warnings.warn(
-                        "`layer_dim` is a list and `num_layers` is provided. "
+                        "`layer_dim` is a sequence and `num_layers` is provided. "
                         "Ignoring `num_layers`."
                     )
-                layers = layer_dim
+                layers = tuple(layer_dim)
         else:
             layers = ()
 
