@@ -15,7 +15,6 @@ class PseudoTokenInitialiser(nn.Module):
         embed_dim: int,
         num_heads: int,
         head_dim: int,
-        p_dropout: float = 0.0,
     ):
         """
         Initialize the pseudo-token initializer.
@@ -24,7 +23,6 @@ class PseudoTokenInitialiser(nn.Module):
             embed_dim (int): Embedding dimension
             num_heads (int): Number of attention heads
             head_dim (int): Dimension per head
-            p_dropout (float): Dropout probability
         """
         super().__init__()
 
@@ -33,14 +31,9 @@ class PseudoTokenInitialiser(nn.Module):
         self.scale = head_dim**-0.5
 
         inner_dim = head_dim * num_heads
-        project_out = not (num_heads == 1 and head_dim == embed_dim)
 
         self.to_k = nn.Linear(embed_dim, inner_dim, bias=False)
         self.to_q = nn.Linear(embed_dim, inner_dim, bias=False)
-        self.to_out = nn.Sequential(
-            nn.Linear(inner_dim, embed_dim),
-            nn.Dropout(p_dropout) if project_out else nn.Identity(),
-        )
 
         # Pre-softmax weighting of location attention weights.
         self.raw_head_weights = nn.Parameter(torch.ones((num_heads,)))

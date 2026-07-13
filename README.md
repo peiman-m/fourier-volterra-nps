@@ -6,6 +6,14 @@ A research codebase for training and evaluating **neural process (NP)** models w
 
 ---
 
+## Errata
+
+`PseudoTokenInitialiser` ([`nps/core/transformers/pseudo_token_init.py`](nps/core/transformers/pseudo_token_init.py)) previously constructed an output projection, `to_out`, inherited from the reference implementation ([`cambridge-mlg/tetnp`](https://github.com/cambridge-mlg/tetnp), `tetnp/networks/tept_init.py`) and never called in `forward`. It received no gradient and could not affect training, predictions, or any reported metric; its only effect was to inflate the parameter count of the TE-PT-TNP baseline (the `te-istnp-*` configs) by under 0.5%. It has been removed.
+
+Earlier versions of the manuscript report parameter counts computed with the layer included; the architecture tables are corrected in the latest version. The counts matching this code can always be reproduced with `python tools/count_params.py`. No result, figure, or claim in the paper changes.
+
+---
+
 ## Table of Contents
 
 1. [Project Structure](#project-structure)
