@@ -1,0 +1,43 @@
+# @package _global_
+
+input_generators:
+
+  train:
+    _target_: utils.data.SyntheticInputGenerator
+    context_sampler:
+      _target_: utils.data.MixtureBetaSampler
+      alpha_range: [0.01, 10.0]
+      beta_range: [0.01, 10.0]
+      num_modes: 2
+    context_range: [-3.0, 3.0]
+    query_range: [-3.0, 3.0]
+    share_params: true
+
+  validation:
+    _target_: utils.data.SyntheticInputGenerator
+    context_sampler:
+      _target_: utils.data.MixtureBetaSampler
+      alpha_range: [0.01, 10.0]
+      beta_range: [0.01, 10.0]
+      num_modes: 2
+    query_sampler:
+      _target_: utils.data.UniformSampler
+    context_range: [-3.0, 3.0]
+    query_range: [-3.0, 3.0]
+
+  test:
+    _target_: utils.data.SyntheticInputGenerator
+    context_sampler:
+      _target_: utils.data.MixtureBetaSampler
+      alpha_range: [0.01, 10.0]
+      beta_range: [0.01, 10.0]
+      num_modes: 2
+    query_sampler:
+      _target_: utils.data.UniformSampler
+    context_range: [-3.0, 3.0]
+    query_range: [-3.0, 3.0]
+
+misc:
+  input_generator:
+    train: mixture-beta
+    eval: mixture-beta

@@ -1,0 +1,71 @@
+# @package _global_
+
+defaults:
+  - /metrics/train: nll
+  - /metrics/val: standard
+  - /metrics/test: standard
+  - _self_
+
+model:
+  _target_: nps.models.CNP
+  encoder: ${cnp_encoder}
+  decoder: ${cnp_decoder}
+  likelihood: ${likelihood}
+
+cnp_encoder:
+  _target_: nps.core.encoders.CNPEncoder
+  x_encoder: ${x_encoder}
+  y_encoder: ${y_encoder}
+  deepset: ${deepset}
+
+x_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${params.x_dim}
+  out_dim: ${params.embed_dim}
+  num_layers: 2
+  layer_dim: ${params.embed_dim}
+
+y_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${params.y_dim}
+  out_dim: ${params.embed_dim}
+  num_layers: 2
+  layer_dim: ${params.embed_dim}
+
+deepset:
+  _target_: nps.core.deepset.DeepSet
+  xy_encoder: ${deepset_xy_encoder}
+  aggregator:
+    _target_: nps.utils.aggregate.Aggregator
+    reduction: 'mean'
+    dim: 1
+    keepdim: false
+
+deepset_xy_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'2 * ${params.embed_dim}'}
+  out_dim: ${params.embed_dim}
+  num_layers: ${params.num_layers}
+  layer_dim: ${params.embed_dim}
+
+cnp_decoder:
+  _target_: nps.core.decoders.CNPDecoder
+  z_decoder: ${z_decoder}
+
+z_decoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'2 * ${params.embed_dim}'}
+  out_dim: ${eval:'2 * ${params.y_dim}'}
+  num_layers: ${params.num_layers}
+  layer_dim: ${params.embed_dim}
+
+likelihood:
+  _target_: nps.likelihoods.gaussian.HeteroscedasticNormalLikelihood
+
+params:
+  embed_dim: 1280
+  num_layers: 6
+
+model_name: CNP-NL${params.num_layers}-EmbD${params.embed_dim}
+# model_name: CNP
+

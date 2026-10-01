@@ -1,0 +1,16 @@
+# @package _global_
+# Eval region: north (northern Europe). See eval_region/center.yaml for rationale.
+
+data:
+  datasets:
+    test:
+      processor:
+        subset_coordinate_ranges:
+          test:
+            latitude: [53, 62]
+            longitude: [8, 28]
+
+misc:
+  eval_region: north
+  eval_name: ${.name}_eval_${.eval_region}
+  metrics_dirpath: ${.artifacts_dir}/metrics/${.eval_region}

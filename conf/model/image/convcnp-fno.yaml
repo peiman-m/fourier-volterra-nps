@@ -1,0 +1,81 @@
+# @package _global_
+
+defaults:
+  - /metrics/train: nll
+  - /metrics/val: standard
+  - /metrics/test: standard
+  - _self_
+
+model:
+  _target_: nps.models.GridConvCNP
+  encoder: ${gridconvcnp_encoder}
+  decoder: ${convcnp_decoder}
+  likelihood: ${likelihood}
+
+gridconvcnp_encoder:
+  _target_: nps.core.encoders.GridConvCNPEncoder
+  convnet: ${cnn}
+  grid_encoder: ${grid_encoder}
+  z_encoder: ${z_encoder}
+
+grid_encoder:
+  _target_: nps.core.convolutions.GridSetConv
+  spatial_dim: ${params.x_dim}
+  in_channels: ${params.y_dim}
+  divide_by_density: ${params.divide_by_density_channel}
+  convnet:
+    _target_: nps.core.convolutions.ConvNd
+    spatial_dim: ${params.x_dim}
+    in_channels: ${params.y_dim}
+    out_channels: ${params.embed_channels}
+    kernel: ${params.setconv_kernel_size}
+    bias: false
+    weights_activation:
+      _target_: torch.abs
+      _partial_: true
+
+z_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'2 * ${params.embed_channels}'}
+  out_dim: ${params.embed_channels}
+  feature_axis: 1
+  num_layers: 2
+  layer_dim: ${params.embed_channels}
+
+convcnp_decoder:
+  _target_: nps.core.decoders.ConvCNPDecoder
+  z_decoder: ${z_decoder}
+
+z_decoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${params.embed_channels}
+  out_dim: ${eval:'2 * ${params.y_dim}'}
+  num_layers: 2
+  layer_dim: ${params.embed_channels}
+
+likelihood:
+  _target_: nps.likelihoods.gaussian.HeteroscedasticNormalLikelihood
+  min_noise: 0.01
+  location_transform: sigmoid
+  scale_transform:
+    - softplus
+    - multiply:
+        value: 0.99
+
+cnn:
+  _target_: nps.core.cnns.FNO
+  spatial_dim: ${params.x_dim}
+  in_channels: ${params.embed_channels}
+  out_channels: ${params.embed_channels}
+  channels: [128, 128, 128, 128, 128, 128]
+  modes: [16, 16]
+  residual: true
+  separable: false
+
+params:
+  embed_channels: 256
+  setconv_kernel_size: 11
+  divide_by_density_channel: false
+
+model_name: GridConvCNP-FNO-EmbD${params.embed_channels}-Modes${cnn.modes}-SetConvK${params.setconv_kernel_size}-FNOSep${cnn.separable}-FNORes${cnn.residual}
+

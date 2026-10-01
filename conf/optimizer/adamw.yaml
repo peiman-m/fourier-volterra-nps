@@ -1,0 +1,10 @@
+# @package _global_
+#
+# AdamW optimizer fragment. ``_partial_: true`` means
+# ``hydra.utils.instantiate`` returns a partial that ``train.py``
+# completes by passing ``model.parameters()``.
+
+optimizer:
+  _target_: torch.optim.AdamW
+  _partial_: true
+  lr: 5.0e-4

@@ -1,0 +1,79 @@
+# @package _global_
+
+defaults:
+  - /metrics/train: nll
+  - /metrics/val: synthetic
+  - /metrics/test: synthetic
+  - _self_
+
+model:
+  _target_: nps.models.SetFourierConvCNP
+  encoder: ${sfconvcnp_encoder}
+  decoder: ${sfconvcnp_decoder}
+  likelihood: ${likelihood}
+
+sfconvcnp_encoder:
+  _target_: nps.core.encoders.SetFourierConvCNPEncoder
+  set_encoder: ${set_encoder}
+  y_encoder: ${y_encoder}
+
+set_encoder:
+  _target_: nps.core.cnns.SetFourierConvNet
+  block: ${setfourierconv_block}
+  num_blocks: ${params.num_blocks}
+  share_params: ${params.share_params}
+
+setfourierconv_block:
+  _target_: nps.core.convolution_blocks.SetFourierConvBlock
+  spatial_dim: ${params.x_dim}
+  embed_channels: ${params.embed_channels}
+  feedforward_channels: ${params.feedforward_channels}
+  max_freq: ${params.max_freq}
+  freq_resolution: ${params.freq_resolution}
+  init_lengthscale: ${params.init_lengthscale}
+  learnable_lengthscale: ${params.learnable_lengthscale}
+  groups: ${params.groups}
+  norm_first: ${params.norm_first}
+  low_rank: ${params.low_rank}
+  rank: ${params.rank}
+  output_feature_mixing: ${params.output_feature_mixing}
+
+y_encoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${eval:'${params.y_dim} + 1'}
+  out_dim: ${params.embed_channels}
+  num_layers: 2
+  layer_dim: ${params.embed_channels}
+
+sfconvcnp_decoder:
+  _target_: nps.core.decoders.SetFourierConvCNPDecoder
+  z_decoder: ${z_decoder}
+
+z_decoder:
+  _target_: nps.core.mlp.MLP
+  in_dim: ${params.embed_channels}
+  out_dim: ${eval:'2 * ${params.y_dim}'}
+  num_layers: 2
+  layer_dim: ${params.embed_channels}
+
+likelihood:
+  _target_: nps.likelihoods.gaussian.HeteroscedasticNormalLikelihood
+
+params:
+  embed_channels: 288
+  feedforward_channels: 1152
+  max_freq: 4.9
+  freq_resolution: 0.1
+  init_lengthscale: 0.05
+  learnable_lengthscale: true
+  groups: 4
+  num_blocks: 6
+  norm_first: true
+  low_rank: false
+  rank: null
+  share_params: false
+  output_feature_mixing: true
+
+model_name: SFConvCNP-NL${params.num_blocks}-EmbD${params.embed_channels}-FFD${params.feedforward_channels}-Grp${params.groups}-MaxFreq${params.max_freq}-FreqRes${params.freq_resolution}-LR${params.low_rank}-Rank${params.rank}-SP${params.share_params}-OFM${params.output_feature_mixing}
+# model_name: SFConvCNP
+

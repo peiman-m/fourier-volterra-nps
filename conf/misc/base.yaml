@@ -1,0 +1,51 @@
+# @package misc
+#
+# Default ``misc`` block. Experiment composers (in
+# ``conf/experiment/<bench>/*.yaml``) override individual keys via their
+# ``data/<bench>/base.yaml`` imports.
+
+experiment_name: default-experiment
+model_run_name: default-run
+
+wandb_logging_enabled: true
+wandb_user: null
+project: ${.experiment_name}
+name: ${.model_run_name}
+
+artifacts_dir: artifacts/${.experiment_name}/model=${.model_run_name}/seed=${.seed}
+checkpoint_dirpath: ${.artifacts_dir}/checkpoints
+metrics_dirpath: ${.artifacts_dir}/metrics
+plots_dirpath: ${.artifacts_dir}/plots
+
+seed: 0
+epochs: 1
+num_workers: 1
+num_eval_workers: 1
+
+gradient_clip_val: 0.5
+check_validation_every_n_epoch: 1
+enable_progress_bar: true
+
+log_interval: 10
+plot_interval: 1
+plot_fn: null
+num_plots: 5
+
+hardware_callback: true
+
+checkpointing:
+  local: true
+  wandb: false
+  save_weights_only: true
+  enable_version_counter: false
+  resume_from: null
+  save_last: true
+  save_periodic_every_n_epochs: null
+  best:
+    monitor: null
+    mode: max
+    save_top_k: 1
+
+default_lightning_logger: true
+
+wandb_run_id: null

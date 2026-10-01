@@ -1,0 +1,63 @@
+# @package _global_
+#
+# Shared base for every ``gp-*`` output generator (gp-rbf, gp-matern12,
+# gp-matern32, gp-matern52, gp-periodic). Each child file pulls this in
+# via its ``defaults:`` list.
+#
+# Uses YAML anchors (``&_shared_kernel_configs``) — OmegaConf honors
+# merge keys, so the anchors load as expected.
+
+shared_kernel_configs: &_shared_kernel_configs
+  ard_num_dims: ${params.x_dim}
+  min_log10_lengthscale: ${params.min_log10_lengthscale}
+  max_log10_lengthscale: ${params.max_log10_lengthscale}
+
+rbf_kernel:
+  _target_: utils.data.RBFKernel
+  _partial_: true
+  <<: *_shared_kernel_configs
+
+matern12_kernel:
+  _target_: utils.data.MaternKernel
+  _partial_: true
+  nu: 0.5
+  <<: *_shared_kernel_configs
+
+matern32_kernel:
+  _target_: utils.data.MaternKernel
+  _partial_: true
+  nu: 1.5
+  <<: *_shared_kernel_configs
+
+matern52_kernel:
+  _target_: utils.data.MaternKernel
+  _partial_: true
+  nu: 2.5
+  <<: *_shared_kernel_configs
+
+periodic_kernel:
+  _target_: utils.data.PeriodicKernel
+  _partial_: true
+  min_log10_period: ${params.min_log10_period}
+  max_log10_period: ${params.max_log10_period}
+  <<: *_shared_kernel_configs
+
+output_generators:
+  train:
+    _target_: utils.data.GPSyntheticOutputGenerator
+    kernel: ${params.kernels}
+    noise_std: 0.1
+  validation:
+    _target_: utils.data.GPSyntheticOutputGenerator
+    kernel: ${params.kernels}
+    noise_std: 0.1
+  test:
+    _target_: utils.data.GPSyntheticOutputGenerator
+    kernel: ${params.kernels}
+    noise_std: 0.1
+
+params:
+  min_log10_lengthscale: -0.602
+  max_log10_lengthscale: 0.0
+  min_log10_period: -0.301
+  max_log10_period: 0.301

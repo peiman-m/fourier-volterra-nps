@@ -1,0 +1,35 @@
+# @package _global_
+
+input_generators:
+
+  train:
+    _target_: utils.data.SyntheticInputGenerator
+    context_sampler:
+      _target_: utils.data.UniformSampler
+    query_sampler:
+      _target_: utils.data.UniformSampler
+    context_range: [-3.0, 3.0]
+    query_range: [-3.0, 3.0]
+
+  validation:
+    _target_: utils.data.SyntheticInputGenerator
+    context_sampler:
+      _target_: utils.data.UniformSampler
+    query_sampler:
+      _target_: utils.data.UniformSampler
+    context_range: [-3.0, 3.0]
+    query_range: [-3.0, 3.0]
+
+  test:
+    _target_: utils.data.SyntheticInputGenerator
+    context_sampler:
+      _target_: utils.data.UniformSampler
+    query_sampler:
+      _target_: utils.data.UniformSampler
+    context_range: [-3.0, 3.0]
+    query_range: [-3.0, 3.0]
+
+misc:
+  input_generator:
+    train: uniform
+    eval: uniform

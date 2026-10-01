@@ -1,0 +1,14 @@
+# @package _global_
+# Parameterized composer for the synthetic benchmark. Pick the model via
+# the ``model/synthetic`` override at the CLI, e.g.
+#   python train.py +experiment=synthetic/default model/synthetic=acnp
+# Any entry under ``conf/model/synthetic/`` is selectable this way, so new
+# models become runnable without adding a per-model composer here.
+
+defaults:
+  - /benchmark/synthetic: base
+  - /optimizer: adamw
+  - /model/synthetic: cnp
+  - /benchmark/synthetic/output_generator: gp-rbf
+  - /benchmark/synthetic/input_generator: uniform
+  - _self_

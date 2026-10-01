@@ -1,0 +1,11 @@
+# @package _global_
+# Parameterized composer for the ERA5 benchmark. Pick the model via the
+# ``model/era5`` group, e.g.
+#   python train.py +experiment=era5/default model/era5=convcnp-resnet
+# Any entry under ``conf/model/era5/`` is selectable this way.
+
+defaults:
+  - /benchmark/era5: base
+  - /optimizer: adamw
+  - /model/era5: cnp
+  - _self_
